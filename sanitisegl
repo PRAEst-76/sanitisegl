@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Directory to search
+SEARCH_DIR="./"  # Replace with your directory path
+
+# Test mode flag
+TEST_MODE=true  # Set to true for test mode, false for actual changes
+
+# Function to search and replace
+process_gamelists() {
+    find "$SEARCH_DIR" -type f -name "gamelist.xml" | while read -r file; do
+        echo "Processing file: $file"
+        # Read each line, find and replace " - " in <name> fields
+        awk -v test="$TEST_MODE" -v file="$file" '
+            {
+                orig_line = $0;  # Save the original line
+                if ($0 ~ /<name>/) {
+                    # Extract content within <name> tags
+                    if (match($0, /<name>([^<]*) - ([^<]*)<\/name>/, arr)) {
+                        new_line = "<name>" arr[1] ": " arr[2] "</name>";
+                        if (test == "true") {
+                            print "File: " file " | Original: " orig_line " | Modified: " new_line;
+                        } else {
+                            $0 = new_line;
+                        }
+                    }
+                }
+                if (test == "false") {
+                    print $0 > "/tmp/gamelist_temp";  # Write modified or unmodified line to temp file
+                }
+            }
+            END {
+                if (test == "false") {
+                    close("/tmp/gamelist_temp");
+                    system("mv /tmp/gamelist_temp \"" file "\"");  # Replace original file
+                }
+            }
+        ' "$file"
+    done
+}
+
+# Run the function
+if [ "$TEST_MODE" = true ]; then
+    echo "Running in TEST MODE. No files will be modified."
+else
+    echo "Running in LIVE MODE. Files will be modified."
+fi
+process_gamelists
+
