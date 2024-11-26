@@ -1,6 +1,6 @@
 A script to sanitise titles in EmulationStation gamelist.xml files. Should work with any setup using EmulationStation (Batocera, RetroPie, ES-DE, RetroBat)
 
-Sometimes, after scraping, you still have some iffy-looking game names in EmulationStation; mix of hyphens and colons, bad capitalisation etc. If, like me, your OCD balks at this situation and the idea of manually tidying the mess is daunting... then this script may be of use.
+Sometimes, after scraping metadata from one of the popular databases (ScreenScraper, thegamesdb, IGDB, etc.), you still have some iffy-looking game names in EmulationStation; mix of hyphens and colons, bad capitalisation etc. If, like me, your OCD balks at this situation and the idea of manually tidying the mess is daunting... then this script may be of use.
 
 ## Usage ##
 
@@ -19,7 +19,7 @@ For safety the script will run in a non-destructive test-mode by default which w
 > Any changes this makes to your gamelist will be lost if you rescrape your games and haven't set your scraper to not update name data. In this case you will need to re-run this program after each scrape.
 
 > [!NOTE]
-> This doesn't touch sortname fields. Those are safe.
+> This doesn't touch `<sortname>` fields. Those are safe.
 
 ## Future Plans ##
 
