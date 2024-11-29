@@ -3,14 +3,16 @@
 # Default settings
 SEARCH_DIR="."  # Default directory to current
 MODE="test"     # Default to test mode
+REMOVE_BRACKETS=false  # Default to not remove trailing brackets
 
 # Parse command-line options
-while getopts "d:tl" opt; do
+while getopts "d:tlb" opt; do
     case $opt in
-        d) SEARCH_DIR="$OPTARG" ;;  # Set search directory
-        t) MODE="test" ;;           # Set mode to test
-        l) MODE="live" ;;           # Set mode to live
-        *) echo "Usage: $0 [-d directory] [-t] [-l]" >&2; exit 1 ;;
+        d) SEARCH_DIR="$OPTARG" ;;      # Set search directory
+        t) MODE="test" ;;               # Set mode to test
+        l) MODE="live" ;;               # Set mode to live
+        b) REMOVE_BRACKETS=true ;;      # Enable bracket removal
+        *) echo "Usage: $0 [-d directory] [-t] [-l] [-b]" >&2; exit 1 ;;
     esac
 done
 
@@ -22,7 +24,7 @@ process_gamelists() {
         # Create a backup in live mode
         [ "$MODE" = "live" ] && cp "$file" "$file.bak"
 
-        awk -v mode="$MODE" '
+        awk -v mode="$MODE" -v remove_brackets="$REMOVE_BRACKETS" '
         BEGIN {
             print "Starting processing for file..." > "/dev/stderr";
         }
@@ -36,28 +38,20 @@ process_gamelists() {
                 if (match($0, /<name>([^<]*)<\/name>/, arr)) {
                     name = arr[1];
 
-                    # Skip names without targeted patterns
-                    if (name !~ / - | : /) {
-                        print "No replacement needed: " name > "/dev/stderr";
-                        next;
+                    # Optionally remove trailing bracketed content
+                    if (remove_brackets == "true") {
+                        name = gensub(/[[:space:]]*[\(\[].*[\)\]]$/, "", "g", name);
+                        print "Removed brackets: " name > "/dev/stderr";
                     }
 
-                    print "Targeting name: " name > "/dev/stderr";
-
-                    # Handle HTML entities for processing
-                    name = gensub(/&amp;/, "&", "g", name);
-
                     # Replace " - " and " : " only when surrounded by valid text
-                    updated_name = gensub(/([[:alnum:]]) - ([[:alnum:]])/, "\\1: \\2", "g", name);
-                    updated_name = gensub(/([[:alnum:]]) : ([[:alnum:]])/, "\\1: \\2", "g", updated_name);
+                    name = gensub(/([[:alnum:]]) - ([[:alnum:]])/, "\\1: \\2", "g", name);
+                    name = gensub(/([[:alnum:]]) : ([[:alnum:]])/, "\\1: \\2", "g", name);
 
-                    # Restore HTML entities in the final output
-                    updated_name = gensub(/&/, "&amp;", "g", updated_name);
-
-                    print "Updated name: " updated_name > "/dev/stderr";
+                    print "Updated name: " name > "/dev/stderr";
 
                     # Replace <name> content with updated value
-                    $0 = gensub(/<name>[^<]*<\/name>/, "<name>" updated_name "</name>", "g", $0);
+                    $0 = gensub(/<name>[^<]*<\/name>/, "<name>" name "</name>", "g", $0);
                 } else {
                     print "No match for <name> content on this line." > "/dev/stderr";
                 }
