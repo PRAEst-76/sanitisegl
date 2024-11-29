@@ -5,15 +5,17 @@ Sometimes, after scraping metadata from one of the popular databases (ScreenScra
 ## Usage ##
 
 ```
-cd romdir
-sanitisegl
+sanitisegl -t -d romdir/roms/
 ```
-
 This will search for gamelist.xml files under the current directory and change the contents of the `<name>` field to use *Title: Subtitle* instead of *Title - Subtitle* or *Title : Subtitle* (The French style used on ScreenScraper.fr)
 
-You can adjust the script and change `SEARCH_DIR=` if you want to run it against a directory other than the current.
+For safety the script will run in a non-destructive test-mode by default which won't change your gamelists. To update the gamelists after verifying it hasn't done anything you didn't want it to do...
 
-For safety the script will run in a non-destructive test-mode by default which won't change your gamelists. To update the gamelists change `TEST_MODE=true` to `TEST_MODE=false` after verifying it hasn't done anything you didn't want it to do.
+```
+sanitisegl -l -d romdir/roms
+```
+
+I'm not responsible if this script borks your gamelist, causes your hair to fall out or sparks civil war in your country.
 
 > [!CAUTION]
 > Any changes this makes to your gamelist will be lost if you rescrape your games and haven't set your scraper to not update name data. In this case you will need to re-run this program after each scrape.
