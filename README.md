@@ -16,12 +16,18 @@ Then run the script as so, substituting the path for the path to your roms or ga
 sanitisegl -t -d romdir/roms/
 ```
 
-This will search for gamelist.xml files under the current directory and change the contents of the `<name>` field to use *Title: Subtitle* instead of *Title - Subtitle* or *Title : Subtitle* (The French style used on ScreenScraper.fr)
+This will search for gamelist.xml files under the current directory and change the contents of the `<name>` field to use ***Title: Subtitle*** instead of ***Title - Subtitle*** or ***Title : Subtitle*** (The French style used on ScreenScraper.fr)
 
 For safety the script will run in a non-destructive test-mode by default which won't change your gamelists. To update the gamelists after verifying it hasn't done anything you didn't want it to do...
 
 ```
 sanitisegl -l -d romdir/roms
+```
+
+Add -b switch to also remove bracketed material from titles, ie. **High Octane - New Fast Version (1994)(Fry-Up Productions)(PD)[a intro disable][AMOS].adf** to **High Octane: New Fast Version**. This is useful for titles that haven't been found by your scraper.
+
+```
+sanitisegl -l -b -d romdir/roms
 ```
 
 I'm not responsible if this script borks your gamelist, causes your hair to fall out or sparks civil war in your country.
