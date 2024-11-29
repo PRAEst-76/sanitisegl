@@ -1,49 +1,81 @@
 #!/bin/bash
 
-# Directory to search
-SEARCH_DIR="./"  # Replace with your directory path
+# Default settings
+SEARCH_DIR="."  # Default directory to current
+MODE="test"     # Default to test mode
 
-# Test mode flag
-TEST_MODE=true  # Set to true for test mode, false for actual changes
+# Parse command-line options
+while getopts "d:tl" opt; do
+    case $opt in
+        d) SEARCH_DIR="$OPTARG" ;;  # Set search directory
+        t) MODE="test" ;;           # Set mode to test
+        l) MODE="live" ;;           # Set mode to live
+        *) echo "Usage: $0 [-d directory] [-t] [-l]" >&2; exit 1 ;;
+    esac
+done
 
-# Function to search and replace
+# Function to process gamelists
 process_gamelists() {
     find "$SEARCH_DIR" -type f -name "gamelist.xml" | while read -r file; do
         echo "Processing file: $file"
-        # Read each line, find and replace " - " in <name> fields
-        awk -v test="$TEST_MODE" -v file="$file" '
-            {
-                orig_line = $0;  # Save the original line
-                if ($0 ~ /<name>/) {
-                    # Extract content within <name> tags
-                    if (match($0, /<name>([^<]*) - ([^<]*)<\/name>/, arr)) {
-                        new_line = "<name>" arr[1] ": " arr[2] "</name>";
-                        if (test == "true") {
-                            print "File: " file " | Original: " orig_line " | Modified: " new_line;
-                        } else {
-                            $0 = new_line;
-                        }
+
+        # Create a backup in live mode
+        [ "$MODE" = "live" ] && cp "$file" "$file.bak"
+
+        awk -v mode="$MODE" '
+        BEGIN {
+            print "Starting processing for file..." > "/dev/stderr";
+        }
+        {
+            ORIGINAL_LINE = $0;  # Keep the original line for debugging
+
+            if ($0 ~ /<name>/) {
+                print "Found <name> tag: " $0 > "/dev/stderr";
+
+                # Match <name> tag and extract content
+                if (match($0, /<name>([^<]*)<\/name>/, arr)) {
+                    name = arr[1];
+
+                    # Skip names without targeted patterns
+                    if (name !~ / - | : /) {
+                        print "No replacement needed: " name > "/dev/stderr";
+                        next;
                     }
-                }
-                if (test == "false") {
-                    print $0 > "/tmp/gamelist_temp";  # Write modified or unmodified line to temp file
+
+                    print "Targeting name: " name > "/dev/stderr";
+
+                    # Handle HTML entities for processing
+                    name = gensub(/&amp;/, "&", "g", name);
+
+                    # Replace " - " and " : " only when surrounded by valid text
+                    updated_name = gensub(/([[:alnum:]]) - ([[:alnum:]])/, "\\1: \\2", "g", name);
+                    updated_name = gensub(/([[:alnum:]]) : ([[:alnum:]])/, "\\1: \\2", "g", updated_name);
+
+                    # Restore HTML entities in the final output
+                    updated_name = gensub(/&/, "&amp;", "g", updated_name);
+
+                    print "Updated name: " updated_name > "/dev/stderr";
+
+                    # Replace <name> content with updated value
+                    $0 = gensub(/<name>[^<]*<\/name>/, "<name>" updated_name "</name>", "g", $0);
+                } else {
+                    print "No match for <name> content on this line." > "/dev/stderr";
                 }
             }
-            END {
-                if (test == "false") {
-                    close("/tmp/gamelist_temp");
-                    system("mv /tmp/gamelist_temp \"" file "\"");  # Replace original file
-                }
+            if (mode == "test") {
+                if ($0 != ORIGINAL_LINE) print $0;  # Output only modified lines in test mode
+            } else {
+                print $0 > "/tmp/gamelist_temp";  # Write changes to temp file
             }
-        ' "$file"
+        }
+        END {
+            if (mode == "live") {
+                close("/tmp/gamelist_temp");
+                system("mv /tmp/gamelist_temp \"" file "\"");  # Replace original file
+            }
+        }' "$file"
     done
 }
 
-# Run the function
-if [ "$TEST_MODE" = true ]; then
-    echo "Running in TEST MODE. No files will be modified."
-else
-    echo "Running in LIVE MODE. Files will be modified."
-fi
+# Run the script
 process_gamelists
-
