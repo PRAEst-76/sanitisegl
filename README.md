@@ -4,9 +4,18 @@ Sometimes, after scraping metadata from one of the popular databases (ScreenScra
 
 ## Usage ##
 
+First you will probably need to make the script execuitable.
+
+```
+chmod +x sanitisegl
+```
+
+Then run the script as so, substituting the path for the path to your roms or gamelists folder.
+
 ```
 sanitisegl -t -d romdir/roms/
 ```
+
 This will search for gamelist.xml files under the current directory and change the contents of the `<name>` field to use *Title: Subtitle* instead of *Title - Subtitle* or *Title : Subtitle* (The French style used on ScreenScraper.fr)
 
 For safety the script will run in a non-destructive test-mode by default which won't change your gamelists. To update the gamelists after verifying it hasn't done anything you didn't want it to do...
