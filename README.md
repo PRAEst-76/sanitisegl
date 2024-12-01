@@ -30,7 +30,7 @@ Add -b switch to also remove bracketed material from titles, ie. **High Octane -
 sanitisegl -l -b -d romdir/roms
 ```
 
-I'm not responsible if this script borks your gamelist, causes your hair to fall out or sparks civil war in your country.
+I'm not responsible if this script borks your gamelist, causes your hair to fall out or sparks civil war in your country. I made this script manly for my own use, should it help others than that's a happy bonus.
 
 > [!CAUTION]
 > Any changes this makes to your gamelist will be lost if you rescrape your games and haven't set your scraper to not update name data. In this case you will need to re-run this program after each scrape.

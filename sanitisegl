@@ -21,10 +21,28 @@ process_gamelists() {
     find "$SEARCH_DIR" -type f -name "gamelist.xml" | while read -r file; do
         echo "Processing file: $file"
 
-        # Create a backup in live mode
-        [ "$MODE" = "live" ] && cp "$file" "$file.bak"
+        # Debug the file path
+        if [ -z "$file" ]; then
+            echo "Error: Empty file path detected. Skipping..." >&2
+            continue
+        fi
 
-        awk -v mode="$MODE" -v remove_brackets="$REMOVE_BRACKETS" '
+        # Ensure the file exists and is not a directory
+        if [ ! -f "$file" ]; then
+            echo "Error: Invalid file path (not a file): $file" >&2
+            continue
+        fi
+
+        # Create a backup in live mode
+        if [ "$MODE" = "live" ]; then
+            echo "Creating backup for $file" >&2
+            cp "$file" "$file.bak" || { echo "Error: Could not create backup for $file"; continue; }
+        fi
+
+        temp_file="/tmp/gamelist_temp"
+        rm -f "$temp_file"  # Ensure no residual temp file exists
+
+        awk -v mode="$MODE" -v remove_brackets="$REMOVE_BRACKETS" -v temp_file="$temp_file" -v original_file="$file" '
         BEGIN {
             print "Starting processing for file..." > "/dev/stderr";
         }
@@ -56,16 +74,21 @@ process_gamelists() {
                     print "No match for <name> content on this line." > "/dev/stderr";
                 }
             }
+
             if (mode == "test") {
                 if ($0 != ORIGINAL_LINE) print $0;  # Output only modified lines in test mode
             } else {
-                print $0 > "/tmp/gamelist_temp";  # Write changes to temp file
+                print $0 >> temp_file;  # Append changes to temp file
             }
         }
         END {
             if (mode == "live") {
-                close("/tmp/gamelist_temp");
-                system("mv /tmp/gamelist_temp \"" file "\"");  # Replace original file
+                if (system("[ -s " temp_file " ]") == 0) {
+                    print "Replacing original file: " original_file " with " temp_file > "/dev/stderr";
+                    system("mv " temp_file " \"" original_file "\"");  # Replace original file
+                } else {
+                    print "Error: Temporary file not created or is empty. Skipping replacement for file." > "/dev/stderr";
+                }
             }
         }' "$file"
     done
